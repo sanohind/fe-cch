@@ -1,5 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
-import Ecommerce from "./pages/Dashboard/Ecommerce";
+import CchDashboard from "./pages/MainPages/Dashboard";
+import CchNewEntry from "./pages/MainPages/NewEntry";
+import CchSubjectDetail from "./pages/MainPages/SubjectDetail";
+import CchHelp from "./pages/MainPages/Help";
+
 import Stocks from "./pages/Dashboard/Stocks";
 import Crm from "./pages/Dashboard/Crm";
 import Marketing from "./pages/Dashboard/Marketing";
@@ -68,7 +72,10 @@ export default function App() {
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
-            <Route index path="/" element={<Ecommerce />} />
+            <Route index path="/" element={<CchDashboard />} />
+            <Route path="/new-entry" element={<CchNewEntry />} />
+            <Route path="/subject-detail/:id" element={<CchSubjectDetail />} />
+            <Route path="/help" element={<CchHelp />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/marketing" element={<Marketing />} />
             <Route path="/crm" element={<Crm />} />
