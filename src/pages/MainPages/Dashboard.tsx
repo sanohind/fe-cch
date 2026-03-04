@@ -15,10 +15,12 @@ import { Triangle, Circle, X } from "lucide-react";
 // Types & Dummy Data
 // ──────────────────────────────────────────────
 type StatusType = "circle" | "triangle" | "x";
+type LevelType = "A" | "B" | "C" | "NA" | "M";
 
 interface ReportEntry {
     id: number;
     statusDot: StatusType;
+    level: LevelType;
     customer: string;
     division: string;
     date: string;
@@ -34,6 +36,7 @@ const tableData: ReportEntry[] = [
     {
         id: 1,
         statusDot: "circle",
+        level: "A",
         customer: "Sanoh Gr.",
         division: "Chassis",
         date: "2026/02/24",
@@ -46,6 +49,7 @@ const tableData: ReportEntry[] = [
     {
         id: 2,
         statusDot: "circle",
+        level: "B",
         customer: "TMMIN",
         division: "Brazing",
         date: "2026/02/25",
@@ -58,6 +62,7 @@ const tableData: ReportEntry[] = [
     {
         id: 3,
         statusDot: "circle",
+        level: "C",
         customer: "ADM",
         division: "Brazing",
         date: "2026/02/26",
@@ -70,6 +75,7 @@ const tableData: ReportEntry[] = [
     {
         id: 4,
         statusDot: "circle",
+        level: "A",
         customer: "HPM",
         division: "Chassis",
         date: "2026/02/27",
@@ -82,6 +88,7 @@ const tableData: ReportEntry[] = [
     {
         id: 5,
         statusDot: "circle",
+        level: "NA",
         customer: "",
         division: "",
         date: "",
@@ -94,6 +101,7 @@ const tableData: ReportEntry[] = [
     {
         id: 6,
         statusDot: "circle",
+        level: "M",
         customer: "",
         division: "",
         date: "",
@@ -106,6 +114,7 @@ const tableData: ReportEntry[] = [
     {
         id: 7,
         statusDot: "triangle",
+        level: "B",
         customer: "Toyota",
         division: "Engine",
         date: "2026/02/20",
@@ -118,6 +127,7 @@ const tableData: ReportEntry[] = [
     {
         id: 8,
         statusDot: "x",
+        level: "A",
         customer: "Honda",
         division: "Brazing",
         date: "2026/02/19",
@@ -130,6 +140,7 @@ const tableData: ReportEntry[] = [
     {
         id: 9,
         statusDot: "circle",
+        level: "C",
         customer: "Daihatsu",
         division: "Chassis",
         date: "2026/02/18",
@@ -142,6 +153,7 @@ const tableData: ReportEntry[] = [
     {
         id: 10,
         statusDot: "triangle",
+        level: "NA",
         customer: "Suzuki",
         division: "Engine",
         date: "2026/02/17",
@@ -165,6 +177,20 @@ const StatusIcon = ({ type }: { type: StatusType }) => {
     }
     return <X className="w-4 h-4 text-gray-600 dark:text-gray-400" strokeWidth={2.5} />;
 };
+
+const levelStyles: Record<LevelType, string> = {
+    A: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
+    B: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
+    C: "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400",
+    NA: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+    M: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+};
+
+const LevelBadge = ({ level }: { level: LevelType }) => (
+    <span className={`inline-flex items-center justify-center w-8 h-6 rounded-md text-xs font-semibold ${levelStyles[level]}`}>
+        {level}
+    </span>
+);
 
 // ──────────────────────────────────────────────
 // Reusable Filter Dropdown (no new CSS classes)
@@ -207,7 +233,7 @@ const FilterSelect = ({ placeholder, options, value, onChange }: FilterSelectPro
 // ──────────────────────────────────────────────
 export default function Dashboard() {
     const navigate = useNavigate();
-    // Filter states
+    // Filter states (temporary)
     const [filterStatus, setFilterStatus] = useState("");
     const [filterLocation, setFilterLocation] = useState("");
     const [filterEventCategory, setFilterEventCategory] = useState("");
@@ -216,28 +242,56 @@ export default function Dashboard() {
     const [filterProductCategory, setFilterProductCategory] = useState("");
     const [filterPriority, setFilterPriority] = useState("");
     const [filterDate, setFilterDate] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // Applied states (to filter the table only when Submit is clicked)
+    const [appliedFilters, setAppliedFilters] = useState({
+        status: "",
+        location: "",
+        eventCat: "",
+        customer: "",
+        reportCat: "",
+        productCat: "",
+        priority: "",
+        date: "",
+        search: ""
+    });
 
     // Table states
-    const [searchTerm, setSearchTerm] = useState("");
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
 
+    const handleApplyFilters = () => {
+        setAppliedFilters({
+            status: filterStatus,
+            location: filterLocation,
+            eventCat: filterEventCategory,
+            customer: filterCustomer,
+            reportCat: filterReportCategory,
+            productCat: filterProductCategory,
+            priority: filterPriority,
+            date: filterDate,
+            search: searchTerm
+        });
+        setCurrentPage(1);
+    };
+
     const filteredData = useMemo(() => {
         return tableData.filter((row) => {
-            const matchSearch = searchTerm
+            const matchSearch = appliedFilters.search
                 ? Object.values(row).some(
                     (v) =>
                         typeof v === "string" &&
-                        v.toLowerCase().includes(searchTerm.toLowerCase())
+                        v.toLowerCase().includes(appliedFilters.search.toLowerCase())
                 )
                 : true;
-            const matchCustomer = filterCustomer ? row.customer === filterCustomer : true;
-            const matchReportCat = filterReportCategory ? row.reportCategory === filterReportCategory : true;
-            const matchLocation = filterLocation ? row.division === filterLocation : true;
-            const matchEventCat = filterEventCategory ? row.reportCategory === filterEventCategory : true;
+            const matchCustomer = appliedFilters.customer ? row.customer === appliedFilters.customer : true;
+            const matchReportCat = appliedFilters.reportCat ? row.reportCategory === appliedFilters.reportCat : true;
+            const matchLocation = appliedFilters.location ? row.division === appliedFilters.location : true;
+            const matchEventCat = appliedFilters.eventCat ? row.reportCategory === appliedFilters.eventCat : true;
             return matchSearch && matchCustomer && matchReportCat && matchLocation && matchEventCat;
         });
-    }, [searchTerm, filterStatus, filterLocation, filterEventCategory, filterCustomer, filterReportCategory, filterProductCategory, filterPriority, filterDate]);
+    }, [appliedFilters]);
 
     const totalItems = filteredData.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -247,7 +301,6 @@ export default function Dashboard() {
 
     const handlePageChange = (page: number) => setCurrentPage(page);
     const handleItemsPerPage = (val: number) => { setItemsPerPage(val); setCurrentPage(1); };
-    const handleSearch = (val: string) => { setSearchTerm(val); setCurrentPage(1); };
 
     return (
         <>
@@ -257,7 +310,7 @@ export default function Dashboard() {
             />
 
             {/* ── Filter Bar ──────────────────────────────── */}
-            <div className="mb-4 space-y-3">
+            <div className="mb-6 space-y-3 rounded-xl border border-gray-100 bg-white p-5 dark:border-white/[0.05] dark:bg-white/[0.03]">
                 {/* Row 1: 3 dropdowns + search subject */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <FilterSelect
@@ -289,7 +342,8 @@ export default function Dashboard() {
                             type="text"
                             placeholder="Search Subject"
                             value={searchTerm}
-                            onChange={(e) => handleSearch(e.target.value)}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleApplyFilters()}
                             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-10 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                         />
                     </div>
@@ -328,6 +382,15 @@ export default function Dashboard() {
                         onChange={setFilterDate}
                     />
                 </div>
+                {/* Submit Filter Button */}
+                <div className="flex justify-start pt-1">
+                    <button
+                        onClick={handleApplyFilters}
+                        className="flex items-center gap-2 h-11 px-6 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium shadow-theme-xs transition-colors"
+                    >
+                        Apply Filters
+                    </button>
+                </div>
             </div>
 
             {/* ── DataTable 2 Style Table ──────────────────── */}
@@ -357,19 +420,16 @@ export default function Dashboard() {
                         <span className="text-gray-500 dark:text-gray-400">entries</span>
                     </div>
 
-                    <div className="relative">
-                        <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none left-4 top-1/2 dark:text-gray-400">
-                            <svg className="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" clipRule="evenodd" d="M3.04199 9.37363C3.04199 5.87693 5.87735 3.04199 9.37533 3.04199C12.8733 3.04199 15.7087 5.87693 15.7087 9.37363C15.7087 12.8703 12.8733 15.7053 9.37533 15.7053C5.87735 15.7053 3.04199 12.8703 3.04199 9.37363ZM9.37533 1.54199C5.04926 1.54199 1.54199 5.04817 1.54199 9.37363C1.54199 13.6991 5.04926 17.2053 9.37533 17.2053C11.2676 17.2053 13.0032 16.5344 14.3572 15.4176L17.1773 18.238C17.4702 18.5309 17.945 18.5309 18.2379 18.238C18.5308 17.9451 18.5309 17.4703 18.238 17.1773L15.4182 14.3573C16.5367 13.0033 17.2087 11.2669 17.2087 9.37363C17.2087 5.04817 13.7014 1.54199 9.37533 1.54199Z" fill="" />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                        <button
+                            onClick={() => navigate("/new-entry")}
+                            className="flex items-center gap-2 h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 transition-colors whitespace-nowrap"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 3.33337V12.6667M3.33337 8H12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                        </span>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            placeholder="Search..."
-                            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-11 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[300px]"
-                        />
+                            New Entry
+                        </button>
                     </div>
                 </div>
 
@@ -378,7 +438,7 @@ export default function Dashboard() {
                     <Table>
                         <TableHeader className="border-t border-gray-100 dark:border-white/[0.05]">
                             <TableRow>
-                                {["Status", "Customer", "Division", "Date", "Report Category", "Failure", "Mode", "Subject", "Creator"].map((label, idx) => (
+                                {["Status", "Level", "Customer", "Division", "Date", "Report Category", "Failure", "Mode", "Subject", "Creator"].map((label, idx) => (
                                     <TableCell key={idx} isHeader className="px-4 py-3 border border-gray-100 dark:border-white/[0.05]">
                                         <p className="font-medium text-gray-700 text-theme-xs dark:text-gray-400">{label}</p>
                                     </TableCell>
@@ -391,6 +451,9 @@ export default function Dashboard() {
                                 <TableRow key={row.id}>
                                     <TableCell className="px-4 py-4 border border-gray-100 dark:border-white/[0.05] whitespace-nowrap">
                                         <StatusIcon type={row.statusDot} />
+                                    </TableCell>
+                                    <TableCell className="px-4 py-4 border border-gray-100 dark:border-white/[0.05] whitespace-nowrap">
+                                        <LevelBadge level={row.level} />
                                     </TableCell>
                                     <TableCell className="px-4 py-4 font-normal text-gray-800 border border-gray-100 dark:border-white/[0.05] text-theme-sm dark:text-gray-400 whitespace-nowrap">
                                         {row.customer}
